@@ -28,23 +28,9 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
-// Dummy Dashboard for now
-const Dashboard = () => {
-  const { user, logout } = useAuth();
-  return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto glass-card rounded-2xl p-8">
-        <h1 className="text-3xl font-bold mb-4">Welcome, {user?.firstName}!</h1>
-        <button
-          onClick={logout}
-          className="bg-red-500 text-white px-4 py-2 rounded-lg"
-        >
-          Logout
-        </button>
-      </div>
-    </div>
-  );
-};
+import Dashboard from "./pages/Dashboard";
+import CreateTrip from "./pages/CreateTrip";
+import Layout from "./components/Layout";
 
 function App() {
   return (
@@ -57,10 +43,13 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Layout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="create-trip" element={<CreateTrip />} />
+          </Route>
         </Routes>
       </AuthProvider>
     </Router>

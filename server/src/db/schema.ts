@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   pgTable,
   serial,
@@ -39,6 +40,7 @@ export const trips = pgTable("trips", {
   isPublic: boolean("is_public").default(false), // [cite: 22, 79]
   shareSlug: text("share_slug").unique(), // For the Public URL
   status: text("status").default("planning"), // planning, ongoing, completed
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // 3. Stops: Multi-city itinerary management [cite: 18, 47]
@@ -98,3 +100,52 @@ export const globalCities = pgTable("global_cities", {
   popularity: integer("popularity"),
   image: text("image_url"),
 });
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  trips: many(trips),
+}));
+
+export const tripsRelations = relations(trips, ({ one, many }) => ({
+  user: one(users, {
+    fields: [trips.userId],
+    references: [users.id],
+  }),
+  stops: many(stops),
+  packingItems: many(packingItems),
+  notes: many(tripNotes),
+}));
+
+export const stopsRelations = relations(stops, ({ one, many }) => ({
+  trip: one(trips, {
+    fields: [stops.tripId],
+    references: [trips.id],
+  }),
+  activities: many(activities),
+  notes: many(tripNotes),
+}));
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  stop: one(stops, {
+    fields: [activities.stopId],
+    references: [stops.id],
+  }),
+}));
+
+export const packingItemsRelations = relations(packingItems, ({ one }) => ({
+  trip: one(trips, {
+    fields: [packingItems.tripId],
+    references: [trips.id],
+  }),
+}));
+
+export const tripNotesRelations = relations(tripNotes, ({ one }) => ({
+  trip: one(trips, {
+    fields: [tripNotes.tripId],
+    references: [trips.id],
+  }),
+  stop: one(stops, {
+    fields: [tripNotes.stopId],
+    references: [stops.id],
+  }),
+}));
