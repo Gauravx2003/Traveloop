@@ -126,6 +126,7 @@ export const communityPosts = pgTable("community_posts", {
   content: text("content").notNull(),
   category: text("category").default("General"), // General, Tips, Review, Question
   imageUrl: text("image_url"),
+  cityName: text("city_name"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

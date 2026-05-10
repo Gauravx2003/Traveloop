@@ -8,9 +8,11 @@ import {
   Loader2,
   MessageSquare,
   User,
+  MapPin,
 } from "lucide-react";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import { useLocation } from "react-router-dom";
 
 interface Post {
   id: number;
@@ -141,11 +143,37 @@ const Community: React.FC = () => {
   const [isFetchingComments, setIsFetchingComments] = useState(false);
   const [newCommentContent, setNewCommentContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<{
-    commentId: number;
     userName: string;
   } | null>(null);
 
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const cityFromUrl = queryParams.get("city");
+
+  const [selectedCity, setSelectedCity] = useState(cityFromUrl || "");
+  const [newCityName, setNewCityName] = useState("");
+  const [globalCitiesList, setGlobalCitiesList] = useState<any[]>([]);
+
   const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const { data } = await api.get("/trips/search/cities");
+        setGlobalCitiesList(data);
+      } catch (err) {
+        console.error("Failed to fetch cities", err);
+      }
+    };
+    fetchCities();
+  }, []);
+
+  useEffect(() => {
+    const city = new URLSearchParams(location.search).get("city");
+    if (city) {
+      setSelectedCity(city);
+    }
+  }, [location.search]);
 
   const fetchPosts = async () => {
     setIsLoading(true);
@@ -153,6 +181,7 @@ const Community: React.FC = () => {
       const params = new URLSearchParams();
       if (search) params.append("search", search);
       if (category && category !== "All") params.append("category", category);
+      if (selectedCity) params.append("cityName", selectedCity);
       params.append("sortBy", sortBy);
 
       const { data } = await api.get(`/community?${params.toString()}`);
@@ -203,7 +232,7 @@ const Community: React.FC = () => {
       fetchPosts();
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [search, category, sortBy]);
+  }, [search, category, sortBy, selectedCity]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -222,6 +251,9 @@ const Community: React.FC = () => {
       const formData = new FormData();
       formData.append("content", newContent);
       formData.append("category", newCategory);
+      if (newCityName) {
+        formData.append("cityName", newCityName);
+      }
       if (imageFile) {
         formData.append("image", imageFile);
       }
@@ -233,6 +265,7 @@ const Community: React.FC = () => {
       setPosts([data, ...posts]);
       setNewContent("");
       setNewCategory("General");
+      setNewCityName("");
       setImageFile(null);
       setPreviewUrl(null);
     } catch (error) {
@@ -332,6 +365,19 @@ const Community: React.FC = () => {
                 <option value="Review">Review</option>
                 <option value="Question">Question</option>
               </select>
+
+              <select
+                value={newCityName}
+                onChange={(e) => setNewCityName(e.target.value)}
+                className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block px-3 py-2 outline-none cursor-pointer"
+              >
+                <option value="">Tag a City (Optional)</option>
+                {globalCitiesList.map((city) => (
+                  <option key={city.id} value={city.name}>
+                    {city.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <button
@@ -379,6 +425,22 @@ const Community: React.FC = () => {
               <option value="Tips">Tips & Advice</option>
               <option value="Review">Review</option>
               <option value="Question">Question</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 shrink-0">
+            <MapPin className="w-4 h-4 text-gray-500" />
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              className="bg-transparent text-sm text-gray-700 outline-none cursor-pointer border-none p-0 focus:ring-0"
+            >
+              <option value="">All Cities</option>
+              {globalCitiesList.map((city) => (
+                <option key={city.id} value={city.name}>
+                  {city.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -446,9 +508,17 @@ const Community: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-full">
-                  {post.category}
-                </span>
+                <div className="flex items-center gap-2">
+                  {post.cityName && (
+                    <span className="px-3 py-1 bg-cyan-50 text-cyan-600 text-xs font-medium rounded-full flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {post.cityName}
+                    </span>
+                  )}
+                  <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-full">
+                    {post.category}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-4 text-gray-700 whitespace-pre-wrap leading-relaxed">

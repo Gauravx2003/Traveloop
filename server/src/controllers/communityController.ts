@@ -6,7 +6,7 @@ import type { AuthRequest } from "../middleware/authMiddleware.js";
 
 // Fetch community posts with search, filter, and sort
 export const getCommunityPosts = async (req: AuthRequest, res: Response) => {
-  const { search, category, sortBy } = req.query;
+  const { search, category, sortBy, cityName } = req.query;
 
   try {
     let query = db
@@ -15,6 +15,7 @@ export const getCommunityPosts = async (req: AuthRequest, res: Response) => {
         content: communityPosts.content,
         category: communityPosts.category,
         imageUrl: communityPosts.imageUrl,
+        cityName: communityPosts.cityName,
         createdAt: communityPosts.createdAt,
         user: {
           id: users.id,
@@ -37,13 +38,18 @@ export const getCommunityPosts = async (req: AuthRequest, res: Response) => {
       conditions.push(eq(communityPosts.category, category));
     }
 
+    if (cityName && typeof cityName === "string") {
+      conditions.push(eq(communityPosts.cityName, cityName));
+    }
+
     // Apply AND conditions
     if (conditions.length > 0) {
       // Create a temporary variable to hold the conditions
-      const filterCondition = conditions.length === 1 ? conditions[0] : and(...conditions);
+      const filterCondition =
+        conditions.length === 1 ? conditions[0] : and(...conditions);
       // Create a new variable to hold the modified query to avoid TypeScript errors
       const filteredQuery = query.where(filterCondition);
-      
+
       // Dynamic Sorting on filtered query
       if (sortBy === "oldest") {
         filteredQuery.orderBy(asc(communityPosts.createdAt));
@@ -70,7 +76,7 @@ export const getCommunityPosts = async (req: AuthRequest, res: Response) => {
 
 // Create a new community post
 export const createCommunityPost = async (req: AuthRequest, res: Response) => {
-  const { content, category } = req.body;
+  const { content, category, cityName } = req.body;
   const userId = req.user?.id;
   const imageUrl = req.file?.path || req.body.imageUrl;
 
@@ -85,6 +91,7 @@ export const createCommunityPost = async (req: AuthRequest, res: Response) => {
         content,
         category: category || "General",
         imageUrl: imageUrl || null,
+        cityName: cityName || null,
       })
       .returning();
 
@@ -94,6 +101,7 @@ export const createCommunityPost = async (req: AuthRequest, res: Response) => {
         content: communityPosts.content,
         category: communityPosts.category,
         imageUrl: communityPosts.imageUrl,
+        cityName: communityPosts.cityName,
         createdAt: communityPosts.createdAt,
         user: {
           id: users.id,
@@ -104,7 +112,7 @@ export const createCommunityPost = async (req: AuthRequest, res: Response) => {
       })
       .from(communityPosts)
       .innerJoin(users, eq(communityPosts.userId, users.id))
-      .where(eq(communityPosts.id, newPost[0].id));
+      .where(eq(communityPosts.id, newPost[0]!.id));
 
     res.status(201).json(postWithUser[0]);
   } catch (error) {
@@ -133,7 +141,7 @@ export const addComment = async (req: AuthRequest, res: Response) => {
       .returning();
 
     const commentWithUser = await db.query.communityComments.findFirst({
-      where: eq(communityComments.id, newComment[0].id),
+      where: eq(communityComments.id, newComment[0]!.id),
       with: {
         user: {
           columns: {
@@ -159,7 +167,7 @@ export const getCommentsByPost = async (req: AuthRequest, res: Response) => {
 
   try {
     const comments = await db.query.communityComments.findMany({
-      where: eq(communityComments.postId, parseInt(postId)),
+      where: eq(communityComments.postId, parseInt(postId as string)),
       with: {
         user: {
           columns: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/api';
 import { Calendar, Image as ImageIcon, Map, AlignLeft, Loader2, ArrowRight } from 'lucide-react';
 
@@ -17,7 +17,16 @@ const CreateTrip: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const [recommendedCities, setRecommendedCities] = useState<any[]>([]);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const initialCity = queryParams.get('city');
+    if (initialCity) {
+      setFormData(prev => ({ ...prev, name: `Trip to ${initialCity}` }));
+    }
+  }, [location]);
 
   useEffect(() => {
     const fetchRecommended = async () => {

@@ -20,63 +20,67 @@ const generateToken = (id: number) => {
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
-router.post("/register", upload.single("image"), async (req, res): Promise<any> => {
-  try {
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      phone,
-      city,
-      country,
-      additionalInfo,
-    } = req.body;
-
-    const userExists = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .execute();
-
-    if (userExists.length > 0) {
-      return res.status(400).json({ message: "User already exists" });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = await db
-      .insert(users)
-      .values({
+router.post(
+  "/register",
+  upload.single("image"),
+  async (req, res): Promise<any> => {
+    try {
+      const {
         firstName,
         lastName,
         email,
-        password: hashedPassword,
+        password,
         phone,
         city,
         country,
         additionalInfo,
-        ...(req.file && { profilePhoto: req.file.path }),
-      })
-      .returning();
+      } = req.body;
 
-    if (newUser[0]) {
-      res.status(201).json({
-        id: newUser[0].id,
-        firstName: newUser[0].firstName,
-        lastName: newUser[0].lastName,
-        email: newUser[0].email,
-        token: generateToken(newUser[0].id),
-      });
-    } else {
-      res.status(400).json({ message: "Invalid user data" });
+      const userExists = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .execute();
+
+      if (userExists.length > 0) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      const newUser = await db
+        .insert(users)
+        .values({
+          firstName,
+          lastName,
+          email,
+          password: hashedPassword,
+          phone,
+          city,
+          country,
+          additionalInfo,
+          ...(req.file && { profilePhoto: req.file.path }),
+        })
+        .returning();
+
+      if (newUser[0]) {
+        res.status(201).json({
+          id: newUser[0].id,
+          firstName: newUser[0].firstName,
+          lastName: newUser[0].lastName,
+          email: newUser[0].email,
+          token: generateToken(newUser[0].id),
+        });
+      } else {
+        res.status(400).json({ message: "Invalid user data" });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
     }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+  },
+);
 
 // @route   POST /api/auth/login
 // @desc    Auth user & get token
@@ -99,6 +103,7 @@ router.post("/login", async (req, res): Promise<any> => {
         id: user[0]!.id,
         firstName: user[0]!.firstName,
         lastName: user[0]!.lastName,
+        role: user[0]!.role,
         email: user[0]!.email,
         token: generateToken(user[0]!.id),
       });

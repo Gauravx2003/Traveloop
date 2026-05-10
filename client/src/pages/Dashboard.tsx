@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import {
   Plus,
@@ -27,6 +27,16 @@ interface DashboardData {
   budgetHighlights: number;
 }
 
+interface City {
+  id: number;
+  name: string;
+  country: string;
+  region: string;
+  costIndex: number;
+  popularity: number;
+  image: string | null;
+}
+
 const recommendedDestinations = [
   {
     name: "Kyoto, Japan",
@@ -47,15 +57,20 @@ const recommendedDestinations = [
 
 const Dashboard: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [popularCities, setPopularCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const response = await api.get("/trips/dashboard");
-        console.log("RESPONSE: ", response.data);
-        setData(response.data);
+        const [dashRes, citiesRes] = await Promise.all([
+          api.get("/trips/dashboard"),
+          api.get("/trips/search/cities"),
+        ]);
+        setData(dashRes.data);
+        setPopularCities(citiesRes.data.slice(0, 6)); // Top 6
       } catch (err) {
         setError("Failed to load dashboard data.");
       } finally {
@@ -111,7 +126,7 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Compass className="w-6 h-6 text-indigo-500" />
-            Your Recent Trips
+            Your Upcoming Trips
           </h2>
         </div>
 
@@ -217,6 +232,84 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         )}
+      </section>
+
+      {/* Popular Destinations Section */}
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-amber-500" />
+            Explore Popular Destinations
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {popularCities.map((city) => (
+            <div
+              key={city.id}
+              className="group relative h-64 rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500"
+            >
+              {city.image ? (
+                <img
+                  src={city.image}
+                  alt={city.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                />
+              ) : (
+                <div className="w-full h-full bg-linear-to-br from-indigo-50 to-cyan-50 flex items-center justify-center">
+                  <MapPin className="w-8 h-8 text-indigo-200" />
+                </div>
+              )}
+              {/* Overlay with buttons */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 z-20">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/create-trip?city=${city.name}`);
+                  }}
+                  className="w-3/4 py-2 bg-white text-indigo-600 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-indigo-50 transition-all transform translate-y-4 group-hover:translate-y-0 duration-300 shadow-lg"
+                >
+                  Plan Trip
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/community?city=${city.name}`);
+                  }}
+                  className="w-3/4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-indigo-700 transition-all transform translate-y-4 group-hover:translate-y-0 duration-300 delay-75 shadow-lg"
+                >
+                  View Posts
+                </button>
+              </div>
+
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent group-hover:opacity-0 transition-opacity duration-300"></div>
+
+              <div className="absolute bottom-4 left-4 right-4">
+                <p className="text-xs font-medium text-indigo-300 uppercase tracking-wider mb-1">
+                  {city.country}
+                </p>
+                <h4 className="text-lg font-bold text-white leading-tight">
+                  {city.name}
+                </h4>
+                <div className="mt-2 flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-1 h-1 rounded-full ${
+                        i < (city.costIndex || 3)
+                          ? "bg-cyan-400"
+                          : "bg-gray-500"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-[10px] text-gray-300 ml-1">
+                    Cost Index
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );
