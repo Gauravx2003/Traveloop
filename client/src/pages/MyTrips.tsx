@@ -19,6 +19,7 @@ const MyTrips: React.FC = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'ongoing' | 'upcoming' | 'completed'>('ongoing');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,18 +42,24 @@ const MyTrips: React.FC = () => {
 
   const filteredTrips = trips.filter(trip => trip.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const ongoingTrips = filteredTrips.filter(trip => {
+  const sortedTrips = [...filteredTrips].sort((a, b) => {
+    const dateA = new Date(a.startDate).getTime();
+    const dateB = new Date(b.startDate).getTime();
+    return sortBy === 'newest' ? dateB - dateA : dateA - dateB;
+  });
+
+  const ongoingTrips = sortedTrips.filter(trip => {
     const start = new Date(trip.startDate);
     const end = new Date(trip.endDate);
     return start <= today && end >= today;
   });
 
-  const upcomingTrips = filteredTrips.filter(trip => {
+  const upcomingTrips = sortedTrips.filter(trip => {
     const start = new Date(trip.startDate);
     return start > today;
   });
 
-  const completedTrips = filteredTrips.filter(trip => {
+  const completedTrips = sortedTrips.filter(trip => {
     const end = new Date(trip.endDate);
     return end < today;
   });
@@ -102,12 +109,17 @@ const MyTrips: React.FC = () => {
         </div>
         
         <div className="flex w-full md:w-auto gap-2">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
-            <Filter className="w-4 h-4" /> Filter
-          </button>
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
-            <ArrowUpDown className="w-4 h-4" /> Sort
-          </button>
+          <div className="relative flex-1 md:flex-none">
+            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest')}
+              className="w-full pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all outline-none shadow-sm cursor-pointer appearance-none"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
+          </div>
         </div>
       </div>
 

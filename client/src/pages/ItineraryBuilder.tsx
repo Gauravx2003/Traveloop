@@ -319,7 +319,11 @@ const ItineraryBuilder: React.FC = () => {
       <div className="relative border-l-2 border-indigo-200 ml-4 space-y-8 pb-8">
         {allActivities.map((act, index) => {
           const actDateStr = act.startTime
-            ? new Date(act.startTime).toLocaleDateString()
+            ? new Date(act.startTime).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "numeric",
+                year: "2-digit",
+              })
             : "Unscheduled";
           const showDateHeader = actDateStr !== lastDateStr;
           lastDateStr = actDateStr;
@@ -472,8 +476,17 @@ const ItineraryBuilder: React.FC = () => {
               <div className="flex items-center gap-2 mt-3 text-gray-600 font-medium">
                 <Calendar className="w-5 h-5 text-indigo-500" />
                 <span>
-                  {new Date(trip.startDate).toLocaleDateString()} -{" "}
-                  {new Date(trip.endDate).toLocaleDateString()}
+                  {new Date(trip.startDate).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "numeric",
+                    year: "2-digit",
+                  })}{" "}
+                  -{" "}
+                  {new Date(trip.endDate).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "numeric",
+                    year: "2-digit",
+                  })}
                 </span>
               </div>
             )}

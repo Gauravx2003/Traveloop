@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import { db } from "../db/index.js";
-import { communityPosts, users } from "../db/schema.js";
+import { communityPosts, users, communityComments } from "../db/schema.js";
 import { eq, desc, asc, ilike, and } from "drizzle-orm";
 import type { AuthRequest } from "../middleware/authMiddleware.js";
 
@@ -110,5 +110,72 @@ export const createCommunityPost = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("Error creating community post:", error);
     res.status(500).json({ message: "Failed to create post" });
+  }
+};
+
+// Add a comment or reply
+export const addComment = async (req: AuthRequest, res: Response) => {
+  const { postId, content, parentId } = req.body;
+  const userId = req.user?.id;
+
+  if (!userId) return res.status(401).json({ message: "User not found" });
+  if (!content) return res.status(400).json({ message: "Content is required" });
+
+  try {
+    const newComment = await db
+      .insert(communityComments)
+      .values({
+        postId,
+        userId,
+        content,
+        parentId: parentId || null,
+      })
+      .returning();
+
+    const commentWithUser = await db.query.communityComments.findFirst({
+      where: eq(communityComments.id, newComment[0].id),
+      with: {
+        user: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePhoto: true,
+          },
+        },
+      },
+    });
+
+    res.status(201).json(commentWithUser);
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    res.status(500).json({ message: "Failed to add comment" });
+  }
+};
+
+// Fetch comments for a post
+export const getCommentsByPost = async (req: AuthRequest, res: Response) => {
+  const { postId } = req.params;
+
+  try {
+    const comments = await db.query.communityComments.findMany({
+      where: eq(communityComments.postId, parseInt(postId)),
+      with: {
+        user: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePhoto: true,
+          },
+        },
+      },
+      orderBy: [asc(communityComments.createdAt)],
+    });
+
+    res.json(comments);
+  } catch (error) {
+    console.error("Error fetching comments:", error);
+    res.status(500).json({ message: "Failed to fetch comments" });
   }
 };

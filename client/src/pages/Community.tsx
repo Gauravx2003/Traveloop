@@ -26,6 +26,99 @@ interface Post {
   };
 }
 
+interface Comment {
+  id: number;
+  postId: number;
+  userId: number;
+  parentId: number | null;
+  content: string;
+  createdAt: string;
+  user: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    profilePhoto: string | null;
+  };
+}
+
+const CommentItem: React.FC<{
+  comment: Comment;
+  allComments: Comment[];
+  level: number;
+  onReply: (commentId: number, userName: string) => void;
+}> = ({ comment, allComments, level, onReply }) => {
+  const replies = allComments.filter((r) => r.parentId === comment.id);
+  const isReply = level > 0;
+
+  return (
+    <div className={`space-y-4 ${isReply ? "ml-6 sm:ml-8" : ""}`}>
+      <div className="flex gap-3 group">
+        <div
+          className={`rounded-full flex items-center justify-center shrink-0 border overflow-hidden shadow-sm ${
+            isReply
+              ? "w-7 h-7 bg-indigo-50 text-indigo-400 border-indigo-100"
+              : "w-8 h-8 bg-gray-100 text-gray-500 border-gray-50"
+          }`}
+        >
+          {comment.user.profilePhoto ? (
+            <img
+              src={comment.user.profilePhoto}
+              alt={comment.user.firstName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-[10px] font-bold">
+              {comment.user.firstName[0]}
+              {comment.user.lastName[0]}
+            </span>
+          )}
+        </div>
+        <div className="flex-1">
+          <div
+            className={`rounded-2xl px-4 py-3 border ${
+              isReply
+                ? "bg-indigo-50/30 border-indigo-100/50"
+                : "bg-gray-50/50 border-gray-100/50"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-gray-900">
+                {comment.user.firstName} {comment.user.lastName}
+              </span>
+              <span className="text-[10px] text-gray-400 font-medium">
+                {new Date(comment.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {comment.content}
+            </p>
+          </div>
+          <button
+            onClick={() => onReply(comment.id, comment.user.firstName)}
+            className="mt-1 ml-2 text-[11px] font-black text-indigo-500 hover:text-indigo-700 uppercase tracking-widest transition-colors"
+          >
+            Reply
+          </button>
+        </div>
+      </div>
+
+      {replies.length > 0 && (
+        <div className="space-y-4">
+          {replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              allComments={allComments}
+              level={level + 1}
+              onReply={onReply}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Community: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [search, setSearch] = useState("");
@@ -39,6 +132,18 @@ const Community: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Comment State
+  const [expandedPostId, setExpandedPostId] = useState<number | null>(null);
+  const [postComments, setPostComments] = useState<{
+    [postId: number]: Comment[];
+  }>({});
+  const [isFetchingComments, setIsFetchingComments] = useState(false);
+  const [newCommentContent, setNewCommentContent] = useState("");
+  const [replyingTo, setReplyingTo] = useState<{
+    commentId: number;
+    userName: string;
+  } | null>(null);
 
   const { user } = useAuth();
 
@@ -56,6 +161,39 @@ const Community: React.FC = () => {
       console.error("Failed to fetch posts", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchComments = async (postId: number) => {
+    setIsFetchingComments(true);
+    try {
+      const { data } = await api.get(`/community/${postId}/comments`);
+      setPostComments((prev) => ({ ...prev, [postId]: data }));
+    } catch (error) {
+      console.error("Failed to fetch comments", error);
+    } finally {
+      setIsFetchingComments(false);
+    }
+  };
+
+  const handlePostComment = async (postId: number, parentId?: number) => {
+    if (!newCommentContent.trim()) return;
+    try {
+      const { data } = await api.post("/community/comments", {
+        postId,
+        content: newCommentContent,
+        parentId: parentId || null,
+      });
+
+      setPostComments((prev) => ({
+        ...prev,
+        [postId]: [...(prev[postId] || []), data],
+      }));
+      setNewCommentContent("");
+      setReplyingTo(null);
+    } catch (error) {
+      console.error("Failed to add comment", error);
+      alert("Failed to post comment");
     }
   };
 
@@ -324,6 +462,111 @@ const Community: React.FC = () => {
                     alt="Post attachment"
                     className="w-full max-h-[400px] object-cover hover:scale-[1.02] transition-transform duration-500"
                   />
+                </div>
+              )}
+
+              {/* Post Actions */}
+              <div className="mt-6 pt-4 border-t border-gray-50 flex items-center gap-6">
+                <button
+                  onClick={() => {
+                    if (expandedPostId === post.id) {
+                      setExpandedPostId(null);
+                    } else {
+                      setExpandedPostId(post.id);
+                      if (!postComments[post.id]) {
+                        fetchComments(post.id);
+                      }
+                    }
+                  }}
+                  className={`flex items-center gap-2 text-sm font-semibold transition-colors ${
+                    expandedPostId === post.id
+                      ? "text-indigo-600"
+                      : "text-gray-500 hover:text-indigo-600"
+                  }`}
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  Comments
+                </button>
+              </div>
+
+              {/* Comments Section */}
+              {expandedPostId === post.id && (
+                <div className="mt-6 pt-6 border-t border-gray-50 animate-in slide-in-from-top-4 duration-300">
+                  {/* Comment Input */}
+                  <div className="flex gap-3 mb-8">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 font-bold text-xs uppercase border border-white shadow-sm">
+                      {user?.firstName[0]}
+                      {user?.lastName[0]}
+                    </div>
+                    <div className="flex-1">
+                      {replyingTo && (
+                        <div className="mb-2 flex items-center justify-between bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
+                          <p className="text-xs text-indigo-700 font-medium">
+                            Replying to{" "}
+                            <span className="font-bold">
+                              @{replyingTo.userName}
+                            </span>
+                          </p>
+                          <button
+                            onClick={() => setReplyingTo(null)}
+                            className="text-indigo-400 hover:text-indigo-600 p-0.5"
+                          >
+                            <User className="w-3 h-3 rotate-45" />
+                          </button>
+                        </div>
+                      )}
+                      <div className="relative">
+                        <textarea
+                          placeholder={
+                            replyingTo
+                              ? "Write a reply..."
+                              : "Write a comment..."
+                          }
+                          value={newCommentContent}
+                          onChange={(e) => setNewCommentContent(e.target.value)}
+                          className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
+                          rows={2}
+                        />
+                        <button
+                          onClick={() =>
+                            handlePostComment(post.id, replyingTo?.commentId)
+                          }
+                          disabled={!newCommentContent.trim()}
+                          className="absolute right-3 bottom-3 p-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-200"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Comments List */}
+                  <div className="space-y-6">
+                    {isFetchingComments ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                      </div>
+                    ) : (postComments[post.id]?.length || 0) === 0 ? (
+                      <p className="text-center text-sm text-gray-400 py-4">
+                        No comments yet. Start the conversation!
+                      </p>
+                    ) : (
+                      // Render top-level comments recursively
+                      postComments[post.id]
+                        ?.filter((c) => !c.parentId)
+                        .map((comment) => (
+                          <CommentItem
+                            key={comment.id}
+                            comment={comment}
+                            allComments={postComments[post.id]}
+                            level={0}
+                            onReply={(commentId, userName) =>
+                              setReplyingTo({ commentId, userName })
+                            }
+                          />
+                        ))
+                    )}
+                  </div>
                 </div>
               )}
             </div>

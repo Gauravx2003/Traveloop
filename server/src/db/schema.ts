@@ -129,10 +129,25 @@ export const communityPosts = pgTable("community_posts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// 9. Community Comments: For threaded discussions
+export const communityComments = pgTable("community_comments", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id")
+    .references(() => communityPosts.id, { onDelete: "cascade" })
+    .notNull(),
+  userId: integer("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  parentId: integer("parent_id"), // Null for top-level comments, ID for replies
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   trips: many(trips),
   communityPosts: many(communityPosts),
+  comments: many(communityComments),
 }));
 
 export const tripsRelations = relations(trips, ({ one, many }) => ({
@@ -179,9 +194,35 @@ export const tripNotesRelations = relations(tripNotes, ({ one }) => ({
   }),
 }));
 
-export const communityPostsRelations = relations(communityPosts, ({ one }) => ({
-  user: one(users, {
-    fields: [communityPosts.userId],
-    references: [users.id],
+export const communityPostsRelations = relations(
+  communityPosts,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [communityPosts.userId],
+      references: [users.id],
+    }),
+    comments: many(communityComments),
   }),
-}));
+);
+
+export const communityCommentsRelations = relations(
+  communityComments,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [communityComments.userId],
+      references: [users.id],
+    }),
+    post: one(communityPosts, {
+      fields: [communityComments.postId],
+      references: [communityPosts.id],
+    }),
+    parent: one(communityComments, {
+      fields: [communityComments.parentId],
+      references: [communityComments.id],
+      relationName: "replies",
+    }),
+    replies: many(communityComments, {
+      relationName: "replies",
+    }),
+  }),
+);
