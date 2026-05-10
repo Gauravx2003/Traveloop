@@ -1,7 +1,7 @@
 import type { Response } from "express";
 import { db } from "../db/index.js";
 import { trips, stops, activities } from "../db/schema.js";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import type { AuthRequest } from "../middleware/authMiddleware.js";
 
 // Create Trip: Form to initiate a new trip [cite: 37]
@@ -66,5 +66,35 @@ export const getDashboardData = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.log("ERROR: ", error);
     res.status(500).json({ message: "Error fetching dashboard", error });
+  }
+};
+// Update Trip: Modify trip details (name, dates, etc.)
+export const updateTrip = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { name, startDate, endDate, description, totalBudget } = req.body;
+  const userId = req.user?.id;
+
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    const updatedTrip = await db
+      .update(trips)
+      .set({
+        name,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        description,
+        totalBudget: totalBudget ? totalBudget.toString() : undefined,
+      })
+      .where(and(eq(trips.id, parseInt(id)), eq(trips.userId, userId)))
+      .returning();
+
+    if (updatedTrip.length === 0) {
+      return res.status(404).json({ message: "Trip not found or unauthorized" });
+    }
+
+    res.json(updatedTrip[0]);
+  } catch (error) {
+    res.status(500).json({ message: "Update failed", error });
   }
 };

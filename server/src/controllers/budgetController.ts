@@ -1,20 +1,35 @@
 import type { Response } from "express";
 import { db } from "../db/index.js";
 import { activities, stops, trips, globalActivities } from "../db/schema.js";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, ilike } from "drizzle-orm";
 import type { AuthRequest } from "../middleware/authMiddleware.js";
 
-// 8. Activity Search: Browse things to do in a specific stop
+// 8. Activity Search: Browse things to do (with optional filters)
 export const searchActivities = async (req: AuthRequest, res: Response) => {
-  const { city, type, maxCost } = req.query;
+  const { city, type, maxCost, query } = req.query;
 
   try {
+    const conditions = [];
+
+    if (city) {
+      conditions.push(eq(globalActivities.cityName, city as string));
+    }
+
+    if (type) {
+      conditions.push(eq(globalActivities.type, type as string));
+    }
+
+    if (maxCost) {
+      conditions.push(sql`${globalActivities.cost} <= ${maxCost}`);
+    }
+
+    if (query) {
+      conditions.push(ilike(globalActivities.title, `%${query}%`));
+    }
+
     const results = await db.query.globalActivities.findMany({
-      where: and(
-        eq(globalActivities.cityName, city as string),
-        type ? eq(globalActivities.type, type as string) : undefined,
-        maxCost ? sql`${globalActivities.cost} <= ${maxCost}` : undefined,
-      ),
+      where: conditions.length > 0 ? and(...conditions) : undefined,
+      limit: 10,
     });
     res.json(results);
   } catch (error) {

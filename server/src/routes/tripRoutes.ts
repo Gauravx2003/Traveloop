@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createTrip, getDashboardData } from "../controllers/tripController.js";
+import { createTrip, getDashboardData, updateTrip } from "../controllers/tripController.js";
 import { upload } from "../config/cloudinary.js";
 import {
   getAllUserTrips,
@@ -47,6 +47,7 @@ router.get("/:id", protect, getTripById); // Ensure this is below specific route
 
 // Trip Management
 router.post("/create", protect, upload.single("coverPhoto"), createTrip); // [cite: 36]
+router.put("/:id", protect, updateTrip);
 router.delete("/:id", protect, deleteTrip); //
 
 // Itinerary Builder [cite: 47]
