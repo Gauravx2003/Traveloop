@@ -5,6 +5,7 @@ import { db } from "./db/index.js"; // Ensure the .js extension is used for ESM
 import authRoutes from "./routes/auth.js";
 import tripRoutes from "./routes/tripRoutes.js";
 import communityRoutes from "./routes/communityRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/trips", tripRoutes);
 app.use("/api/community", communityRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Start Server
 app.listen(PORT, () => {

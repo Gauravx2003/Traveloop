@@ -1,7 +1,7 @@
 import React from "react";
 import { Outlet, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Compass, LogOut, User, MessageSquare } from "lucide-react";
+import { Compass, LogOut, User, MessageSquare, Shield } from "lucide-react";
 
 const Layout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -37,6 +37,14 @@ const Layout: React.FC = () => {
                 >
                   <MessageSquare className="w-4 h-4" /> Community
                 </Link>
+                {user?.role === "admin" && (
+                  <Link
+                    to="/admin"
+                    className="text-gray-600 hover:text-indigo-600 font-medium text-sm transition-colors flex items-center gap-1.5"
+                  >
+                    <Shield className="w-4 h-4" /> Admin
+                  </Link>
+                )}
               </div>
               <Link
                 to="/profile"

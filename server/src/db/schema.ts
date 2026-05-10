@@ -24,6 +24,7 @@ export const users = pgTable("users", {
   profilePhoto: text("profile_photo"),
   languagePreference: text("language").default("en"), // [cite: 90]
   createdAt: timestamp("created_at").defaultNow(),
+  role: text("role").default("user"), // 'user' or 'admin'
 });
 
 // 2. Trips: The central entity [cite: 36, 41]

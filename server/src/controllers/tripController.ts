@@ -86,11 +86,15 @@ export const updateTrip = async (req: AuthRequest, res: Response) => {
         description,
         totalBudget: totalBudget ? totalBudget.toString() : undefined,
       })
-      .where(and(eq(trips.id, parseInt(id)), eq(trips.userId, userId)))
+      .where(
+        and(eq(trips.id, parseInt(id as string)), eq(trips.userId, userId)),
+      )
       .returning();
 
     if (updatedTrip.length === 0) {
-      return res.status(404).json({ message: "Trip not found or unauthorized" });
+      return res
+        .status(404)
+        .json({ message: "Trip not found or unauthorized" });
     }
 
     res.json(updatedTrip[0]);

@@ -38,6 +38,7 @@ import SharedItinerary from "./pages/SharedItinerary";
 import UserProfile from "./pages/UserProfile";
 import TripNotes from "./pages/TripNotes";
 import Community from "./pages/Community";
+import AdminDashboard from "./pages/AdminDashboard";
 import Layout from "./components/Layout";
 
 function App() {
@@ -60,6 +61,7 @@ function App() {
             <Route path="create-trip" element={<CreateTrip />} />
             <Route path="my-trips" element={<MyTrips />} />
             <Route path="community" element={<Community />} />
+            <Route path="admin" element={<AdminDashboard />} />
             <Route path="profile" element={<UserProfile />} />
             <Route path="trips/:id/itinerary" element={<ItineraryBuilder />} />
             <Route path="trips/:id/budget" element={<BudgetScreen />} />
