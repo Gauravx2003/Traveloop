@@ -41,6 +41,9 @@ export const trips = pgTable("trips", {
   shareSlug: text("share_slug").unique(), // For the Public URL
   status: text("status").default("planning"), // planning, ongoing, completed
   createdAt: timestamp("created_at").defaultNow(),
+  totalBudget: numeric("total_budget", { precision: 10, scale: 2 }).default(
+    "0",
+  ),
 });
 
 // 3. Stops: Multi-city itinerary management [cite: 18, 47]
@@ -100,6 +103,17 @@ export const globalCities = pgTable("global_cities", {
   costIndex: integer("cost_index"), // 1 to 5 scale [cite: 58]
   popularity: integer("popularity"),
   image: text("image_url"),
+});
+
+export const globalActivities = pgTable("global_activities", {
+  id: serial("id").primaryKey(),
+  cityName: text("city_name").notNull(), // Link to the city being searched
+  title: text("title").notNull(),
+  description: text("description"),
+  type: text("type"), // Sightseeing, Food, Adventure
+  cost: numeric("cost", { precision: 10, scale: 2 }).default("0"),
+  duration: text("duration"),
+  imageUrl: text("image_url"),
 });
 
 // Relations

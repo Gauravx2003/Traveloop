@@ -12,6 +12,10 @@ import {
   getFullItinerary,
   searchCities,
 } from "../controllers/searchController.js";
+import {
+  searchActivities,
+  getTripBudget,
+} from "../controllers/budgetController.js";
 
 const router = Router();
 
@@ -33,5 +37,11 @@ router.get("/itinerary/:tripId", protect, getFullItinerary); //
 
 // 7. City Search (Supports discovery with cost index and country info)
 router.get("/search/cities", protect, searchCities); // [cite: 58, 62]
+
+// 8. Activity Search
+router.get("/search/activities", protect, searchActivities);
+
+// 9. Budget Breakdown
+router.get("/budget/:tripId", protect, getTripBudget);
 
 export default router;

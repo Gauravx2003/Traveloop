@@ -1,5 +1,5 @@
 import { db } from "./index.js";
-import { globalCities } from "./schema.js";
+import { globalCities, globalActivities } from "./schema.js";
 
 const seed = async () => {
   console.log("🌱 Seeding global cities...");
@@ -63,7 +63,30 @@ const seed = async () => {
     },
   ];
 
-  await db.insert(globalCities).values(cities);
+  const activitySeeds = [
+    {
+      cityName: "Paris",
+      title: "Louvre Museum",
+      type: "Sightseeing",
+      cost: "20.00",
+      duration: "3h",
+    },
+    {
+      cityName: "Tokyo",
+      title: "Shibuya Food Tour",
+      type: "Food",
+      cost: "55.00",
+      duration: "4h",
+    },
+    {
+      cityName: "Bali",
+      title: "Surfing Lesson",
+      type: "Adventure",
+      cost: "30.00",
+      duration: "2h",
+    },
+  ];
+  await db.insert(globalActivities).values(activitySeeds);
   console.log("✅ Seeding complete!");
   process.exit(0);
 };
