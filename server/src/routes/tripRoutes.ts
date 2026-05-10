@@ -24,9 +24,15 @@ import {
   deletePackingItem,
   resetPackingList,
   copyTrip,
-  toggleTripVisibility
+  toggleTripVisibility,
 } from "../controllers/shareController.js";
-
+import {
+  getTripNotes,
+  saveTripNote,
+  updateProfile,
+  updateTripNote,
+  deleteTripNote,
+} from "../controllers/userController.js";
 
 const router = Router();
 
@@ -66,5 +72,14 @@ router.patch("/:tripId/packing/reset", protect, resetPackingList);
 router.get("/share/:slug", getPublicItinerary); // [cite: 80, 85]
 router.post("/share/:slug/copy", protect, copyTrip);
 router.patch("/:tripId/share", protect, toggleTripVisibility);
+
+// 12. User Profile / Settings
+router.put("/profile", protect, updateProfile); // Supports name, photo, and language
+
+// 13. Trip Notes / Journal
+router.post("/notes", protect, saveTripNote); // Tie notes to specific trip/day [cite: 92]
+router.get("/notes/:tripId", protect, getTripNotes); // View notes list sorted by date
+router.put("/notes/:noteId", protect, updateTripNote);
+router.delete("/notes/:noteId", protect, deleteTripNote);
 
 export default router;
