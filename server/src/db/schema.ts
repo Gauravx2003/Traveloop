@@ -96,6 +96,7 @@ export const globalCities = pgTable("global_cities", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   country: text("country").notNull(),
+  region: text("region").notNull(), // Added for filtering
   costIndex: integer("cost_index"), // 1 to 5 scale [cite: 58]
   popularity: integer("popularity"),
   image: text("image_url"),
