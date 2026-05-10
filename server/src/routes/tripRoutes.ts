@@ -1,13 +1,27 @@
 import { Router } from "express";
 import { createTrip, getDashboardData } from "../controllers/tripController.js";
+import {
+  getAllUserTrips,
+  getTripById,
+  addStopToTrip,
+  addActivityToStop,
+  deleteTrip,
+} from "../controllers/itineraryController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = Router();
 
-// Dashboard route [cite: 32]
+// Dashboard & List View
 router.get("/dashboard", protect, getDashboardData);
+router.get("/list", protect, getAllUserTrips); // [cite: 41]
+router.get("/:id", protect, getTripById); // Ensure this is below specific routes like /dashboard and /list
 
-// Create trip route [cite: 36]
-router.post("/create", protect, createTrip);
+// Trip Management
+router.post("/create", protect, createTrip); // [cite: 36]
+router.delete("/:id", protect, deleteTrip); //
+
+// Itinerary Builder [cite: 47]
+router.post("/stops", protect, addStopToTrip); //
+router.post("/activities", protect, addActivityToStop); //
 
 export default router;

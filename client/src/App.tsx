@@ -30,6 +30,8 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 
 import Dashboard from "./pages/Dashboard";
 import CreateTrip from "./pages/CreateTrip";
+import MyTrips from "./pages/MyTrips";
+import ItineraryBuilder from "./pages/ItineraryBuilder";
 import Layout from "./components/Layout";
 
 function App() {
@@ -49,6 +51,8 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="create-trip" element={<CreateTrip />} />
+            <Route path="my-trips" element={<MyTrips />} />
+            <Route path="trips/:id/itinerary" element={<ItineraryBuilder />} />
           </Route>
         </Routes>
       </AuthProvider>

@@ -24,6 +24,11 @@ const Layout: React.FC = () => {
 
             {/* User Actions */}
             <div className="flex items-center gap-4">
+              <div className="hidden md:flex gap-6 mr-4">
+                <Link to="/my-trips" className="text-gray-600 hover:text-indigo-600 font-medium text-sm transition-colors flex items-center gap-1.5">
+                  <Compass className="w-4 h-4" /> My Trips
+                </Link>
+              </div>
               <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full">
                 <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
                   <User className="w-4 h-4" />
