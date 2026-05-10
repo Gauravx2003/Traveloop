@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
             <Sparkles className="w-4 h-4 text-amber-500" />
             Total Budget Spent:{" "}
             <span className="font-semibold text-gray-700">
-              $
+              ₹
               {Number(data?.budgetHighlights).toLocaleString(undefined, {
                 minimumFractionDigits: 2,
               })}
@@ -130,7 +130,7 @@ const Dashboard: React.FC = () => {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-100 to-cyan-50 text-indigo-300">
+                    <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-indigo-100 to-cyan-50 text-indigo-300">
                       <Map className="w-12 h-12" />
                     </div>
                   )}
@@ -160,10 +160,13 @@ const Dashboard: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center text-sm font-medium text-indigo-600 group-hover:text-indigo-700">
+                  <Link
+                    to={`/trips/${trip.id}/itinerary`}
+                    className="flex items-center text-sm font-medium text-indigo-600 group-hover:text-indigo-700"
+                  >
                     View Itinerary{" "}
                     <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                  </div>
+                  </Link>
                 </div>
               </div>
             ))}

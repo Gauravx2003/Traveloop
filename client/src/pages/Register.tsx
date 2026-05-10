@@ -1,46 +1,85 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
-import { Camera, User as UserIcon, Mail, Phone, MapPin, Globe, AlignLeft, Loader2, ArrowRight } from 'lucide-react';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import api from "../utils/api";
+import {
+  Camera,
+  User as UserIcon,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  AlignLeft,
+  Loader2,
+  ArrowRight,
+} from "lucide-react";
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    phone: '',
-    city: '',
-    country: '',
-    additionalInfo: ''
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    phone: "",
+    city: "",
+    country: "",
+    additionalInfo: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const { data } = await api.post('/auth/register', formData);
-      login(data.token, { id: data.id, firstName: data.firstName, lastName: data.lastName, email: data.email });
+      const formDataToSend = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        formDataToSend.append(key, value);
+      });
+      if (imageFile) {
+        formDataToSend.append("image", imageFile);
+      }
+
+      const { data } = await api.post("/auth/register", formDataToSend, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      login(data.token, {
+        id: data.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+      });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to register');
+      setError(err.response?.data?.message || "Failed to register");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4 sm:p-8">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-2xl glass-card rounded-3xl p-8 sm:p-10 relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-40 h-40 rounded-full bg-indigo-100 blur-3xl opacity-60"></div>
@@ -48,14 +87,36 @@ const Register: React.FC = () => {
 
         <div className="relative z-10 flex flex-col items-center">
           {/* Photo Circle Placeholder */}
-          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-400 p-1 shadow-lg mb-6 cursor-pointer hover:scale-105 transition-transform">
-            <div className="w-full h-full rounded-full bg-white flex items-center justify-center border-2 border-transparent">
-              <Camera className="w-8 h-8 text-indigo-300" />
+          <div className="relative w-24 h-24 rounded-full bg-linear-to-tr from-indigo-500 to-cyan-400 p-1 shadow-lg mb-6 cursor-pointer hover:scale-105 transition-transform group">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className="w-full h-full rounded-full bg-white flex items-center justify-center border-2 border-transparent overflow-hidden relative">
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt="Profile preview"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Camera className="w-8 h-8 text-indigo-300" />
+              )}
+              {/* Overlay on hover */}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="w-6 h-6 text-white" />
+              </div>
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Create Account</h2>
-          <p className="text-gray-500 text-sm mb-8">Join Traveloop and start planning</p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Create Account
+          </h2>
+          <p className="text-gray-500 text-sm mb-8">
+            Join Traveloop and start planning
+          </p>
 
           <form onSubmit={handleSubmit} className="w-full">
             {error && (
@@ -71,13 +132,29 @@ const Register: React.FC = () => {
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <UserIcon className="h-4 w-4 text-gray-400" />
                   </div>
-                  <input type="text" name="firstName" required value={formData.firstName} onChange={handleChange} className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none" placeholder="First Name" />
+                  <input
+                    type="text"
+                    name="firstName"
+                    required
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none"
+                    placeholder="First Name"
+                  />
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <UserIcon className="h-4 w-4 text-gray-400" />
                   </div>
-                  <input type="text" name="lastName" required value={formData.lastName} onChange={handleChange} className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none" placeholder="Last Name" />
+                  <input
+                    type="text"
+                    name="lastName"
+                    required
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none"
+                    placeholder="Last Name"
+                  />
                 </div>
               </div>
 
@@ -87,19 +164,42 @@ const Register: React.FC = () => {
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <Mail className="h-4 w-4 text-gray-400" />
                   </div>
-                  <input type="email" name="email" required value={formData.email} onChange={handleChange} className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none" placeholder="Email Address" />
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none"
+                    placeholder="Email Address"
+                  />
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <Phone className="h-4 w-4 text-gray-400" />
                   </div>
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none" placeholder="Phone Number" />
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none"
+                    placeholder="Phone Number"
+                  />
                 </div>
               </div>
 
-               {/* Password */}
-               <div className="relative">
-                  <input type="password" name="password" required value={formData.password} onChange={handleChange} className="w-full px-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none" placeholder="Password (min 6 chars)" />
+              {/* Password */}
+              <div className="relative">
+                <input
+                  type="password"
+                  name="password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none"
+                  placeholder="Password (min 6 chars)"
+                />
               </div>
 
               {/* Row 3 */}
@@ -108,13 +208,27 @@ const Register: React.FC = () => {
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <MapPin className="h-4 w-4 text-gray-400" />
                   </div>
-                  <input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none" placeholder="City" />
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none"
+                    placeholder="City"
+                  />
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <Globe className="h-4 w-4 text-gray-400" />
                   </div>
-                  <input type="text" name="country" value={formData.country} onChange={handleChange} className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none" placeholder="Country" />
+                  <input
+                    type="text"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none"
+                    placeholder="Country"
+                  />
                 </div>
               </div>
 
@@ -123,14 +237,21 @@ const Register: React.FC = () => {
                 <div className="absolute top-3 left-0 pl-3.5 pointer-events-none">
                   <AlignLeft className="h-4 w-4 text-gray-400" />
                 </div>
-                <textarea name="additionalInfo" value={formData.additionalInfo} onChange={handleChange} rows={3} className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none resize-none" placeholder="Additional Information ...." />
+                <textarea
+                  name="additionalInfo"
+                  value={formData.additionalInfo}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm outline-none resize-none"
+                  placeholder="Additional Information ...."
+                />
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full max-w-xs mx-auto bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 text-white font-medium py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-70"
+              className="w-full max-w-xs mx-auto bg-linear-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 text-white font-medium py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-70"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -144,8 +265,11 @@ const Register: React.FC = () => {
           </form>
 
           <p className="mt-8 text-sm text-gray-500">
-            Already have an account?{' '}
-            <Link to="/login" className="text-indigo-600 font-medium hover:text-indigo-700 transition-colors">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
+            >
               Log in here
             </Link>
           </p>
