@@ -6,7 +6,8 @@ import type { AuthRequest } from "../middleware/authMiddleware.js";
 
 // Create Trip: Form to initiate a new trip [cite: 37]
 export const createTrip = async (req: AuthRequest, res: Response) => {
-  const { name, description, startDate, endDate, coverPhoto, totalBudget } = req.body;
+  const { name, description, startDate, endDate, totalBudget } = req.body;
+  const coverPhoto = req.file?.path || req.body.coverPhoto;
   const userId = req.user?.id;
 
   if (!userId) return res.status(401).json({ message: "User not found" });

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { createTrip, getDashboardData } from "../controllers/tripController.js";
+import { upload } from "../config/cloudinary.js";
 import {
   getAllUserTrips,
   getTripById,
@@ -7,7 +8,7 @@ import {
   addActivityToStop,
   deleteTrip,
 } from "../controllers/itineraryController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect, type AuthRequest } from "../middleware/authMiddleware.js";
 import {
   getFullItinerary,
   searchCities,
@@ -33,6 +34,9 @@ import {
   updateTripNote,
   deleteTripNote,
 } from "../controllers/userController.js";
+import { db } from "../db/index.js";
+import { trips, users } from "../db/schema.js";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -42,7 +46,7 @@ router.get("/list", protect, getAllUserTrips); // [cite: 41]
 router.get("/:id", protect, getTripById); // Ensure this is below specific routes like /dashboard and /list
 
 // Trip Management
-router.post("/create", protect, createTrip); // [cite: 36]
+router.post("/create", protect, upload.single("coverPhoto"), createTrip); // [cite: 36]
 router.delete("/:id", protect, deleteTrip); //
 
 // Itinerary Builder [cite: 47]
@@ -81,5 +85,53 @@ router.post("/notes", protect, saveTripNote); // Tie notes to specific trip/day 
 router.get("/notes/:tripId", protect, getTripNotes); // View notes list sorted by date
 router.put("/notes/:noteId", protect, updateTripNote);
 router.delete("/notes/:noteId", protect, deleteTripNote);
+
+// Upload Trip Cover Photo
+router.post(
+  "/upload-cover/:tripId",
+  protect,
+  upload.single("image"),
+  async (req, res) => {
+    if (!req.file) return res.status(400).send("No file uploaded.");
+
+    const { tripId } = req.params;
+    const imageUrl = req.file.path; // Cloudinary URL
+
+    try {
+      await db
+        .update(trips)
+        .set({ coverPhoto: imageUrl })
+        .where(eq(trips.id, parseInt(tripId as string)));
+
+      res.json({ imageUrl });
+    } catch (error) {
+      res.status(500).json({ message: "Update failed", error });
+    }
+  },
+);
+
+// Upload Profile Photo
+router.post(
+  "/upload-profile",
+  protect,
+  upload.single("image"),
+  async (req: AuthRequest, res) => {
+    if (!req.file) return res.status(400).send("No file uploaded.");
+
+    const userId = req.user?.id;
+    const imageUrl = req.file.path;
+
+    try {
+      await db
+        .update(users)
+        .set({ profilePhoto: imageUrl })
+        .where(eq(users.id, userId!));
+
+      res.json({ imageUrl });
+    } catch (error) {
+      res.status(500).json({ message: "Update failed", error });
+    }
+  },
+);
 
 export default router;

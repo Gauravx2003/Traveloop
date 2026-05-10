@@ -7,6 +7,8 @@ import { eq } from "drizzle-orm";
 import { protect } from "../middleware/authMiddleware.js";
 import type { AuthRequest } from "../middleware/authMiddleware.js";
 
+import { upload } from "../config/cloudinary.js";
+
 const router = express.Router();
 
 const generateToken = (id: number) => {
@@ -18,7 +20,7 @@ const generateToken = (id: number) => {
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
-router.post("/register", async (req, res): Promise<any> => {
+router.post("/register", upload.single("image"), async (req, res): Promise<any> => {
   try {
     const {
       firstName,
@@ -55,6 +57,7 @@ router.post("/register", async (req, res): Promise<any> => {
         city,
         country,
         additionalInfo,
+        ...(req.file && { profilePhoto: req.file.path }),
       })
       .returning();
 

@@ -116,9 +116,22 @@ export const globalActivities = pgTable("global_activities", {
   imageUrl: text("image_url"),
 });
 
+// 8. Community: Shared experiences and posts
+export const communityPosts = pgTable("community_posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  content: text("content").notNull(),
+  category: text("category").default("General"), // General, Tips, Review, Question
+  imageUrl: text("image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   trips: many(trips),
+  communityPosts: many(communityPosts),
 }));
 
 export const tripsRelations = relations(trips, ({ one, many }) => ({
@@ -162,5 +175,12 @@ export const tripNotesRelations = relations(tripNotes, ({ one }) => ({
   stop: one(stops, {
     fields: [tripNotes.stopId],
     references: [stops.id],
+  }),
+}));
+
+export const communityPostsRelations = relations(communityPosts, ({ one }) => ({
+  user: one(users, {
+    fields: [communityPosts.userId],
+    references: [users.id],
   }),
 }));

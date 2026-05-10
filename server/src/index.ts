@@ -4,6 +4,7 @@ import * as dotenv from "dotenv";
 import { db } from "./db/index.js"; // Ensure the .js extension is used for ESM
 import authRoutes from "./routes/auth.js";
 import tripRoutes from "./routes/tripRoutes.js";
+import communityRoutes from "./routes/communityRoutes.js";
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.get("/health", (req, res) => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/trips", tripRoutes);
+app.use("/api/community", communityRoutes);
 
 // Start Server
 app.listen(PORT, () => {
